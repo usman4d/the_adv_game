@@ -5,8 +5,8 @@ use bevy::{
     render::render_resource::*,
 };
 
-#[uuid = "2d9582a2-7f19-4f1b-9633-a9ab3276838e"]
 #[derive(AsBindGroup, TypeUuid, Clone)]
+#[uuid = "2d9582a2-7f19-4f1b-9633-a9ab3276838e"]
 pub struct TerrainMaterial {
     #[uniform(0)]
     pub base_color: Color,

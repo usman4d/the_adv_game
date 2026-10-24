@@ -1,4 +1,6 @@
-use crate::{gamemanager::WindowData, terrain_generation::TerrainSeersTag};
+use crate::{
+    gamemanager::WindowData, terrain_generation::TerrainSeersTag, touch_controls::TouchControls,
+};
 use bevy::{input::mouse::MouseMotion, prelude::*};
 use bevy_rapier3d::{na::Vector3, prelude::*};
 pub struct PlayerPlugin;
@@ -104,6 +106,7 @@ fn player_movement(
     mut player_query: Query<(Entity, &mut PlayerData), With<PlayerRootTag>>,
     mut transform_query: Query<&mut Transform>,
     keyboard_input: Res<Input<KeyCode>>,
+    touch_controls: Res<TouchControls>,
     time: Res<Time>,
 ) {
     for (player, mut player_data) in player_query.iter_mut() {
@@ -125,6 +128,13 @@ fn player_movement(
             if keyboard_input.pressed(KeyCode::D) {
                 let right_vec = transform.forward().cross(player_data.surface_normal);
                 move_vec += right_vec;
+            }
+            let touch_move = touch_controls.movement;
+            if touch_move != Vec2::ZERO {
+                let forw_vec = transform.right().cross(player_data.surface_normal);
+                let right_vec = transform.forward().cross(player_data.surface_normal);
+                move_vec -= forw_vec * touch_move.y;
+                move_vec += right_vec * touch_move.x;
             }
         }
 
@@ -159,6 +169,7 @@ fn player_look(
     )>,
     window_data: Query<&WindowData>,
     mut mouse_evr: EventReader<MouseMotion>,
+    touch_controls: Res<TouchControls>,
     time: Res<Time>,
 ) {
     let cursor_lock: bool = window_data.get_single().unwrap().cursor_lock;
@@ -170,6 +181,7 @@ fn player_look(
     for ev in mouse_evr.iter() {
         delta += ev.delta * time.delta_seconds() * 0.4;
     }
+    delta += touch_controls.look_delta * time.delta_seconds() * 0.4;
     for mut transform in set.p0().iter_mut() {
         let pitch = Quat::from_rotation_x(-delta.y);
         transform.rotation = transform.rotation * pitch;

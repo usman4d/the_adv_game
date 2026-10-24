@@ -18,11 +18,43 @@ opt-level = 3
 linker = "clang"
 rustflags = ["-C", "link-arg=-fuse-ld=/usr/local/bin/mold"]
 
+[lib]
+name = "adv_game"
+crate-type = ["rlib", "cdylib"]
+
+[[bin]]
+name = "adv_game"
+path = "src/main.rs"
+
 [dependencies]
-bevy = { version = "0.8.1", features = ["dynamic","jpeg"] }
+bevy = { version = "0.8.1", features = ["jpeg"] }
 bevy_rapier3d = "0.17.0"
 noise = { git = "https://github.com/Usman4D/noise-rs.git" , features = ["images"]}
-bevy-inspector-egui = "0.13.0"
 futures-lite = "1.12.0"
+
+# Desktop-only tooling: dynamic linking, egui inspector and hot reloading
+# are not available on Android.
+[target.'cfg(not(target_os = "android"))'.dependencies]
+bevy = { version = "0.8.1", features = ["dynamic", "jpeg"] }
+bevy-inspector-egui = "0.13.0"
 hot-lib-reloader = "^0.6"
 hotlib = {path = "hotlib"}
+
+[package.metadata.android]
+package = "com.usman4d.kairos"
+apk_name = "kairos"
+# Populated by build_android.sh with only the assets the game loads.
+assets = "target/android-assets"
+build_targets = ["aarch64-linux-android"]
+resources = "android/res"
+
+[package.metadata.android.sdk]
+min_sdk_version = 26
+target_sdk_version = 31
+
+[package.metadata.android.application]
+label = "Kairos"
+icon = "@mipmap/ic_launcher"
+
+[package.metadata.android.application.activity]
+orientation = "landscape"
