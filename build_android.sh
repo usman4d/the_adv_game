@@ -2,7 +2,7 @@
 # Builds an Android APK with cargo-apk.
 #
 # Requirements:
-#   rustup target add aarch64-linux-android
+#   rustup target add armv7-linux-androideabi aarch64-linux-android
 #   cargo install cargo-apk --version 0.9.6 --locked
 #   ANDROID_SDK_ROOT (platforms;android-31, build-tools) and ANDROID_NDK_ROOT (r25)
 set -euo pipefail
