@@ -1,15 +1,14 @@
 use bevy::{
     pbr::Material,
-    prelude::{Color, Handle, Image},
-    reflect::TypeUuid,
-    render::render_resource::*,
+    prelude::{Asset, Handle, Image, LinearRgba, TypePath},
+    render::render_resource::AsBindGroup,
+    shader::ShaderRef,
 };
 
-#[derive(AsBindGroup, TypeUuid, Clone)]
-#[uuid = "2d9582a2-7f19-4f1b-9633-a9ab3276838e"]
+#[derive(Asset, TypePath, AsBindGroup, Clone)]
 pub struct TerrainMaterial {
     #[uniform(0)]
-    pub base_color: Color,
+    pub base_color: LinearRgba,
     #[texture(1)]
     #[sampler(2)]
     pub color_tex_handle: Handle<Image>,
@@ -20,6 +19,6 @@ pub struct TerrainMaterial {
 
 impl Material for TerrainMaterial {
     fn fragment_shader() -> ShaderRef {
-        "shaders/terrain.wgsl".into()
+        "shaders/terrain.wesl".into()
     }
 }

@@ -4,7 +4,7 @@ pub struct GameManagerPlugin;
 
 impl Plugin for GameManagerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup);
+        app.add_systems(Startup, setup);
     }
 }
 
@@ -14,5 +14,5 @@ pub struct WindowData {
 }
 
 fn setup(mut commands: Commands) {
-    commands.spawn().insert(WindowData { cursor_lock: true });
+    commands.spawn(WindowData { cursor_lock: true });
 }

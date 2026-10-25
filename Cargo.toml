@@ -13,6 +13,10 @@ opt-level = 1
 [profile.dev.packages."*"]
 opt-level = 3
 
+[profile.release]
+# Keeps the Android libraries (and APK) small.
+strip = "symbols"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [target.x86_64-unknown-linux-gnu]
 linker = "clang"
@@ -27,18 +31,21 @@ name = "adv_game"
 path = "src/main.rs"
 
 [dependencies]
-bevy = { version = "0.8.1", features = ["jpeg"] }
-bevy_rapier3d = "0.17.0"
+bevy = { version = "0.20.0", features = ["jpeg"] }
+bevy_rapier3d = "0.37.0"
 noise = { git = "https://github.com/Usman4D/noise-rs.git" , features = ["images"]}
-futures-lite = "1.12.0"
 
 # Desktop-only tooling: dynamic linking, egui inspector and hot reloading
 # are not available on Android.
 [target.'cfg(not(target_os = "android"))'.dependencies]
-bevy = { version = "0.8.1", features = ["dynamic", "jpeg"] }
-bevy-inspector-egui = "0.13.0"
+bevy = { version = "0.20.0", features = ["dynamic_linking", "jpeg"] }
+bevy-inspector-egui = "0.38.0"
 hot-lib-reloader = "^0.6"
 hotlib = {path = "hotlib"}
+
+# cargo-apk packages a NativeActivity app (Bevy defaults to GameActivity, which needs Gradle).
+[target.'cfg(target_os = "android")'.dependencies]
+bevy = { version = "0.20.0", default-features = false, features = ["android-native-activity"] }
 
 [package.metadata.android]
 package = "com.usman4d.kairos"

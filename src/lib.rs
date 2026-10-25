@@ -9,20 +9,21 @@ mod touch_controls;
 #[cfg(not(target_os = "android"))]
 mod worldgen_ui;
 use bevy::{
-    pbr::wireframe::{Wireframe, WireframeConfig, WireframePlugin},
+    asset::UnapprovedPathMode,
     prelude::*,
-    render::{render_resource::WgpuFeatures, settings::WgpuSettings, texture::ImageSettings},
-    window::{PresentMode, WindowMode},
+    render::{
+        render_resource::WgpuFeatures,
+        settings::{RenderCreation, WgpuSettings},
+        RenderPlugin,
+    },
+    window::{CursorGrabMode, CursorOptions, MonitorSelection, PresentMode, PrimaryWindow, VideoModeSelection, WindowMode},
 };
 #[cfg(not(target_os = "android"))]
-use bevy_inspector_egui::WorldInspectorPlugin;
+use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 use bevy_rapier3d::prelude::*;
-use freecamera::FreeCameraPlugin;
 use gamemanager::GameManagerPlugin;
 use gamemanager::WindowData;
-use player::PlayerData;
 use player::PlayerPlugin;
-use skybox::SkyboxPlugin;
 use terrain_generation::TerrainGenerationPlugin;
 use touch_controls::TouchControlsPlugin;
 #[cfg(not(target_os = "android"))]
@@ -31,52 +32,62 @@ use worldgen_ui::WorldGenUIPlugin;
 #[bevy_main]
 pub fn main() {
     let mut app = App::new();
-    app.insert_resource(Msaa { samples: 4 })
-        .insert_resource(WindowDescriptor {
-            title: "kairos".to_string(),
-            resizable: false,
-            present_mode: PresentMode::Fifo,
-            // Android windows are always fullscreen; requesting exclusive
-            // fullscreen there panics because no video mode is reported.
-            mode: if cfg!(target_os = "android") {
-                WindowMode::Windowed
-            } else {
-                WindowMode::Fullscreen
-            },
-            ..Default::default()
-        })
-        .insert_resource(WgpuSettings {
-            // Line polygon mode (wireframes) is not supported by mobile GPUs.
-            features: if cfg!(target_os = "android") {
-                WgpuFeatures::empty()
-            } else {
-                WgpuFeatures::POLYGON_MODE_LINE
-            },
-            ..default()
-        })
-        .insert_resource(ImageSettings::default_linear())
-        .insert_resource(ClearColor(Color::rgb(
-            70.0 / 255.0,
-            57.0 / 255.0,
-            40.0 / 255.0,
-        )))
-        .add_plugins(DefaultPlugins)
-        //.add_plugin(WireframePlugin)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        //.add_plugin(RapierDebugRenderPlugin::default())
-        .add_plugin(GameManagerPlugin)
-        .add_plugin(TouchControlsPlugin)
-        .add_startup_system(setup)
-        .add_system(regennoise)
-        .add_system(cursor_grab_system)
-        .add_plugin(PlayerPlugin)
-        // .add_plugin(FreeCameraPlugin)
-        .add_plugin(TerrainGenerationPlugin)
-        // .add_plugin(SkyboxPlugin)
-        ;
+    app.add_plugins(
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    title: "kairos".to_string(),
+                    resizable: false,
+                    present_mode: PresentMode::Fifo,
+                    // Android windows are always fullscreen; requesting exclusive
+                    // fullscreen there fails because no video mode is reported.
+                    mode: if cfg!(target_os = "android") {
+                        WindowMode::Windowed
+                    } else {
+                        WindowMode::Fullscreen(MonitorSelection::Primary, VideoModeSelection::Current)
+                    },
+                    ..default()
+                }),
+                ..default()
+            })
+            .set(RenderPlugin {
+                render_creation: RenderCreation::from(WgpuSettings {
+                    // Line polygon mode (wireframes) is not supported by mobile GPUs.
+                    features: if cfg!(target_os = "android") {
+                        WgpuFeatures::empty()
+                    } else {
+                        WgpuFeatures::POLYGON_MODE_LINE
+                    },
+                    ..default()
+                }),
+                ..default()
+            })
+            .set(AssetPlugin {
+                // The world gen tool loads its noise image from outside the assets folder.
+                unapproved_path_mode: UnapprovedPathMode::Allow,
+                ..default()
+            })
+            .set(ImagePlugin::default_linear()),
+    )
+    .insert_resource(ClearColor(Color::srgb(
+        70.0 / 255.0,
+        57.0 / 255.0,
+        40.0 / 255.0,
+    )))
+    //.add_plugins(WireframePlugin::default())
+    .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
+    //.add_plugins(RapierDebugRenderPlugin::default())
+    .add_plugins((GameManagerPlugin, TouchControlsPlugin))
+    .add_systems(Startup, setup)
+    .add_systems(Update, (regennoise, cursor_grab_system))
+    .add_plugins(PlayerPlugin)
+    // .add_plugins(freecamera::FreeCameraPlugin)
+    .add_plugins(TerrainGenerationPlugin);
+    // .add_plugins(skybox::SkyboxPlugin)
     #[cfg(not(target_os = "android"))]
-    app.add_plugin(WorldInspectorPlugin::new())
-        .add_plugin(WorldGenUIPlugin);
+    app.add_plugins(EguiPlugin::default())
+        .add_plugins(WorldInspectorPlugin::new())
+        .add_plugins(WorldGenUIPlugin);
     app.run();
 }
 
@@ -85,22 +96,17 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut windows: ResMut<Windows>,
+    mut cursor_options: Query<&mut CursorOptions, With<PrimaryWindow>>,
 ) {
     for za in 0..2 {
         for ya in 0..2 {
             for xa in 0..2 {
                 // cube
-                commands.spawn_bundle(PbrBundle {
-                    mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-                    material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-                    transform: Transform::from_xyz(
-                        (xa * 4) as f32,
-                        (ya * 4) as f32,
-                        (za * 4) as f32,
-                    ),
-                    ..default()
-                });
+                commands.spawn((
+                    Mesh3d(meshes.add(Cuboid::from_length(1.0))),
+                    MeshMaterial3d(materials.add(Color::srgb(0.8, 0.7, 0.6))),
+                    Transform::from_xyz((xa * 4) as f32, (ya * 4) as f32, (za * 4) as f32),
+                ));
             }
         }
     }
@@ -108,58 +114,59 @@ fn setup(
     let mut sun_tranform = Transform::from_xyz(0.0, 0.0, 0.0);
     sun_tranform.rotate_x(4.7);
     // directional light
-    commands.spawn_bundle(DirectionalLightBundle {
-        directional_light: DirectionalLight {
+    commands.spawn((
+        DirectionalLight {
             illuminance: 10000.0,
-            shadows_enabled: true,
-            ..Default::default()
+            shadow_maps_enabled: true,
+            ..default()
         },
-        transform: sun_tranform,
-        ..Default::default()
-    });
+        sun_tranform,
+    ));
     // light
-    //commands.spawn_bundle(PointLightBundle {
-    //    point_light: PointLight {
+    //commands.spawn((
+    //    PointLight {
     //        intensity: 1500.0,
-    //        shadows_enabled: true,
+    //        shadow_maps_enabled: true,
     //        ..default()
     //    },
-    //    transform: Transform::from_xyz(0.0, 5.0, 0.0),
-    //    ..default()
-    //});
+    //    Transform::from_xyz(0.0, 5.0, 0.0),
+    //));
     #[cfg(not(target_os = "android"))]
-    {
-        let window = windows.get_primary_mut().unwrap();
-        window.set_cursor_lock_mode(true);
-        window.set_cursor_visibility(false);
+    if let Ok(mut cursor) = cursor_options.single_mut() {
+        cursor.grab_mode = CursorGrabMode::Locked;
+        cursor.visible = false;
     }
 }
-fn regennoise(key: Res<Input<KeyCode>>) {
-    if key.just_pressed(KeyCode::G) {
+fn regennoise(key: Res<ButtonInput<KeyCode>>) {
+    if key.just_pressed(KeyCode::KeyG) {
         // hot_lib::calc_noise();
     }
 }
 fn cursor_grab_system(
     mut windowdata_query: Query<&mut WindowData>,
-    mut windows: ResMut<Windows>,
-    key: Res<Input<KeyCode>>,
+    mut cursor_options: Query<&mut CursorOptions, With<PrimaryWindow>>,
+    key: Res<ButtonInput<KeyCode>>,
 ) {
     if cfg!(target_os = "android") {
         return;
     }
-    let window = windows.get_primary_mut().unwrap();
-    let mut windowsdata = windowdata_query.get_single_mut().unwrap();
+    let Ok(mut cursor) = cursor_options.single_mut() else {
+        return;
+    };
+    let Ok(mut windowsdata) = windowdata_query.single_mut() else {
+        return;
+    };
 
     if key.just_pressed(KeyCode::Escape) {
-        window.set_cursor_lock_mode(true);
-        window.set_cursor_visibility(false);
+        cursor.grab_mode = CursorGrabMode::Locked;
+        cursor.visible = false;
 
         windowsdata.cursor_lock = true;
     }
 
-    if key.just_pressed(KeyCode::Q) {
-        window.set_cursor_lock_mode(false);
-        window.set_cursor_visibility(true);
+    if key.just_pressed(KeyCode::KeyQ) {
+        cursor.grab_mode = CursorGrabMode::None;
+        cursor.visible = true;
 
         windowsdata.cursor_lock = false;
     }
