@@ -2,6 +2,7 @@ extern crate noise;
 
 use bevy::prelude::*;
 use noise::*;
+use noise::Add;
 use std::collections::HashMap;
 pub struct DualContouring {
     origin: IVec3,
