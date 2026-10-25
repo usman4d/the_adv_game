@@ -34,6 +34,10 @@ path = "src/main.rs"
 bevy = { version = "0.20.0", default-features = false, features = ["jpeg"] }
 bevy_rapier3d = "0.37.0"
 noise = { git = "https://github.com/Usman4D/noise-rs.git" , features = ["images"]}
+# Shape grammar library used to generate buildings.
+geometry = { git = "https://github.com/usman4d/procgen-rs.git" }
+macros = { git = "https://github.com/usman4d/procgen-rs.git" }
+rand = "0.8"
 
 # Desktop-only tooling: dynamic linking, egui inspector and hot reloading
 # are not available on Android.

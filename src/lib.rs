@@ -1,6 +1,8 @@
 mod dual_contouring;
 mod freecamera;
 mod gamemanager;
+mod ground;
+mod house;
 mod player;
 mod skybox;
 mod terrain_generation;
@@ -23,6 +25,8 @@ use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 use bevy_rapier3d::prelude::*;
 use gamemanager::GameManagerPlugin;
 use gamemanager::WindowData;
+use ground::GroundPlugin;
+use house::HousePlugin;
 use player::PlayerPlugin;
 use terrain_generation::TerrainGenerationPlugin;
 use touch_controls::TouchControlsPlugin;
@@ -77,7 +81,7 @@ pub fn main() {
     //.add_plugins(WireframePlugin::default())
     .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
     //.add_plugins(RapierDebugRenderPlugin::default())
-    .add_plugins((GameManagerPlugin, TouchControlsPlugin))
+    .add_plugins((GameManagerPlugin, TouchControlsPlugin, GroundPlugin, HousePlugin))
     .add_systems(Startup, setup)
     .add_systems(Update, (regennoise, cursor_grab_system))
     .add_plugins(PlayerPlugin)

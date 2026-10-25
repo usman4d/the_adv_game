@@ -1,5 +1,6 @@
 use crate::{
-    gamemanager::WindowData, terrain_generation::TerrainSeersTag, touch_controls::TouchControls,
+    gamemanager::WindowData, ground::SnapToGround, terrain_generation::TerrainSeersTag,
+    touch_controls::TouchControls,
 };
 use bevy::{input::mouse::AccumulatedMouseMotion, prelude::*};
 use bevy_rapier3d::prelude::*;
@@ -55,6 +56,8 @@ fn spawn_player(mut commands: Commands) {
             TerrainSeersTag,
             Transform::from_xyz(-10.0, 0.0, 0.0),
             Visibility::default(),
+            // The spawn height is a guess; move onto the terrain once it has loaded.
+            SnapToGround { height: 0.1 },
         ))
         .with_children(|parent| {
             parent.spawn((
