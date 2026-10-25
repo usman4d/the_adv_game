@@ -31,28 +31,45 @@ name = "adv_game"
 path = "src/main.rs"
 
 [dependencies]
-bevy = { version = "0.20.0", features = ["jpeg"] }
+bevy = { version = "0.20.0", default-features = false, features = ["jpeg"] }
 bevy_rapier3d = "0.37.0"
 noise = { git = "https://github.com/Usman4D/noise-rs.git" , features = ["images"]}
 
 # Desktop-only tooling: dynamic linking, egui inspector and hot reloading
 # are not available on Android.
 [target.'cfg(not(target_os = "android"))'.dependencies]
-bevy = { version = "0.20.0", features = ["dynamic_linking", "jpeg"] }
+bevy = { version = "0.20.0", features = ["default", "dynamic_linking"] }
 bevy-inspector-egui = "0.38.0"
 hot-lib-reloader = "^0.6"
 hotlib = {path = "hotlib"}
 
+# Only the engine features the game uses, to keep Android builds fast and small.
 # cargo-apk packages a NativeActivity app (Bevy defaults to GameActivity, which needs Gradle).
 [target.'cfg(target_os = "android")'.dependencies]
-bevy = { version = "0.20.0", default-features = false, features = ["android-native-activity"] }
+bevy = { version = "0.20.0", default-features = false, features = [
+    "android-native-activity",
+    "std",
+    "multi_threaded",
+    "async_executor",
+    "bevy_asset",
+    "bevy_log",
+    "bevy_winit",
+    "touch",
+    "bevy_render",
+    "bevy_core_pipeline",
+    "bevy_pbr",
+    "bevy_ui",
+    "bevy_ui_render",
+    "tonemapping_luts",
+    "zstd_rust",
+] }
 
 [package.metadata.android]
 package = "com.usman4d.kairos"
 apk_name = "kairos"
 # Populated by build_android.sh with only the assets the game loads.
 assets = "target/android-assets"
-build_targets = ["armv7-linux-androideabi", "aarch64-linux-android"]
+build_targets = ["armv7-linux-androideabi"]
 resources = "android/res"
 
 [package.metadata.android.sdk]
